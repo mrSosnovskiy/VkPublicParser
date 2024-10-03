@@ -8,7 +8,9 @@ keyword = "Давлеканово"
 # Проверить id городов, сюда id городов
 city_id = [2]
 count_member = 10000
-
+start_time = datetime.datetime.now()
+access_token = config_parser.access_token
+group_count = 1000
 
 
 # Функция для получения групп
@@ -45,11 +47,15 @@ def create_json(response, count_member: int):
 
     return data_base
 
+
 def check_city_members(group_id, city_id):
     count_members = 0
     offset = 0
     response_members = requests.get(
-        f'https://api.vk.com/method/groups.getMembers?group_id={group_id}&offset={offset}&count_members={1000}&fields=city&access_token=vk1.a.Lpwp8383TgND4rB1mPHWde2y4EE39UPkcpZWUPAevZX8DZCYifg5a6HMzLPeGaNPzb9fBNYyX2UDxq8FvZn7g2zGPprgGehYi_qbPnVeeMRFUda8L6WaVQCGlzCL4FVgKzdLNzcZhZD9-4q1cNuzZK-QnRA50RcFfertv-OrmqM9YR5VegYa6eLPWXxt9FPGGffqV0dCY2CpfBmoscZ8gQ&expires_in=0&user_id=138964205&v=5.131')
+        f'https://api.vk.com/method/groups.getMembers?'
+        f'group_id={group_id}&offset={offset}&count_members={1000}&'
+        f'fields=city&access_token={access_token}&v=5.131')
+
     if 'response' in response_members.json().keys():
         # print(response_members.json()['response'].keys())
         if 'count' in response_members.json()['response'].keys():
@@ -57,11 +63,12 @@ def check_city_members(group_id, city_id):
             while True:
 
                 response_members = requests.get(
-                    f'https://api.vk.com/method/groups.getMembers?group_id={group_id}&offset={offset}&count_members={1000}&fields=city&access_token={access_token}&v=5.131')
+                    f'https://api.vk.com/method/groups.getMembers?'
+                    f'group_id={group_id}&offset={offset}&count_mem'
+                    f'bers={1000}&fields=city&access_token={access_token}&v=5.131')
                 members = []
                 if 'response' in response_members.json().keys():
                     members = response_members.json()['response']['items']
-
 
                 for member in members:
                     # print(member)
@@ -76,7 +83,7 @@ def check_city_members(group_id, city_id):
 
             print(count_members, group_size)
             if count_members / group_size * 100 < 38:
-                # print(count_members, group_size)
+                print(count_members, group_size)
                 return True
 
     return False
@@ -104,31 +111,19 @@ def check_competitor(description):
     return False
 
 
-start_time = datetime.datetime.now()
-
-
-access_token = config_parser.access_token
-
-
-group_count = 1000
-
 # Отправляем запрос к VK API для поиска сообществ
 response = requests.get(
     f"https://api.vk.com/method/groups.search?q={keyword}"
     f"&sort=6&count={group_count}&access_token={access_token}&v=5.131"
-    )
-
-print(response.json())
+)
 
 # # Создаем json файл для записи результатов
 data_base = create_json(response, count_member)
 with open(f'group_search_{keyword}.json', 'w', encoding='utf-8') as file:
     json.dump(data_base, file, indent=4)
 
-
 with open(f"group_search_{keyword}.json", "r") as file:
     data_base = json.load(file)
-
 
 dict_comperation = {}
 dict_nacrutka = {}
@@ -141,25 +136,20 @@ for key in work_dict.keys():
         description = work_dict[key]['Описание']
         if check_competitor(description):
             dict_comperation[word] = work_dict[word]['Ссылка на сообщество']
-
         elif check_city_members(key, city_id):
             dict_nacrutka[word] = work_dict[word]['Ссылка на сообщество']
-
         else:
             dict_donor[key] = work_dict[key]['Ссылка на сообщество']
 
 with open("comperation.txt", 'w', encoding='utf-8') as file:
     for key in dict_comperation.keys():
         file.write(f"{dict_comperation[key]}\n")
-
 with open("nacrutca.txt", 'w', encoding='utf-8') as file:
     for key in dict_nacrutka.keys():
         file.write(f"{dict_nacrutka[key]}\n")
-
 with open("donor.txt", 'w', encoding='utf-8') as file:
     for key in dict_donor.keys():
         file.write(f"{dict_donor[key]}\n")
 
 finish_time = datetime.datetime.now() - start_time
-
 print('Время', finish_time)
